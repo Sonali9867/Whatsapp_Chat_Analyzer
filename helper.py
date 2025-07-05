@@ -3,7 +3,6 @@ import pandas as pd
 from collections import Counter
 from emoji import is_emoji
 
-
 extract=URLExtract()
 from wordcloud import WordCloud
 
@@ -34,48 +33,53 @@ def most_busy_users(df):
     return x,df
 
 
-def create_wordcloud(selected_user,df):
-    f = open('stop_hinglish.txt', 'r')
-    stop_words = f.read()
+
+
+def create_wordcloud(selected_user, df):
+    with open('stop_hinglish.txt', 'r') as f:
+        stop_words = f.read().splitlines()
 
     if selected_user != "Overall":
         df = df[df['user'] == selected_user]
 
-    temp = df[df['user'] != 'group_notification']
-    temp = temp[temp['message'] != '<Media omitted>\n']
+    temp = df[
+        (df['user'] != 'group_notification') &
+        (~df['message'].str.lower().str.contains('<media omitted>')) &
+        (~df['message'].str.lower().str.contains('this message was deleted'))
+    ]
 
     def remove_stop_words(message):
-        y=[]
-        for word in message.lower().split():
-            if word not in stop_words:
-                y.append(word)
-        return " ".join(y)
+        return " ".join([word for word in message.lower().split() if word not in stop_words])
 
+    temp['message'] = temp['message'].apply(remove_stop_words)
 
     wc = WordCloud(width=500, height=500, min_font_size=10, background_color='white')
-    temp['message'] = temp['message'].apply(remove_stop_words)
-    df_wc = wc.generate(df['message'].str.cat(sep=" "))
+    df_wc = wc.generate(temp['message'].str.cat(sep=" "))
     return df_wc
 
-def most_common_words(selected_user,df):
-    f = open('stop_hinglish.txt', 'r')
-    stop_words = f.read()
+
+def most_common_words(selected_user, df):
+    with open('stop_hinglish.txt', 'r') as f:
+        stop_words = f.read().splitlines()
 
     if selected_user != "Overall":
         df = df[df['user'] == selected_user]
 
-    temp = df[df['user'] != 'group_notification']
-    temp = temp[temp['message'] != '<Media omitted>\n']
+    temp = df[
+        (df['user'] != 'group_notification') &
+        (~df['message'].str.lower().str.contains('<media omitted>')) &
+        (~df['message'].str.lower().str.contains('this message was deleted'))
+    ]
 
     words = []
-
     for message in temp['message']:
         for word in message.lower().split():
             if word not in stop_words:
                 words.append(word)
 
-    most_common_df = pd.DataFrame(Counter(words).most_common(20))
+    most_common_df = pd.DataFrame(Counter(words).most_common(20), columns=['Word', 'Count'])
     return most_common_df
+
 
 def emoji_helper(selected_user,df):
     if selected_user != "Overall":
