@@ -7,6 +7,7 @@ from PIL import Image
 from io import BytesIO
 import streamlit as st
 import datetime
+import matplotlib
 
 st.set_page_config(page_title="WhatsApp Chat Analyzer", page_icon="📱")
 
@@ -29,9 +30,13 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+st.markdown("<br>", unsafe_allow_html=True)
+st.info("🔒 **Privacy Notice:** Your uploaded chat file is processed locally and never stored. We do not save, share, or access your data beyond this session.")
+
 
 # Sidebar for file upload
 uploaded_file = st.sidebar.file_uploader("Choose a WhatsApp chat file")
+
 
 if uploaded_file is not None:
     bytes_data = uploaded_file.getvalue()
@@ -168,7 +173,7 @@ if uploaded_file is not None:
         st.title("Most Common Words")
         most_common_df = helper.most_common_words(selected_user, df)
         fig, ax = plt.subplots()
-        ax.barh(most_common_df[0], most_common_df[1], color='skyblue')
+        ax.barh(most_common_df['Word'], most_common_df['Count'], color='skyblue')
         plt.xticks(rotation='vertical')
         ax.set_xlabel("Count", fontsize=12)
         ax.set_ylabel("Words", fontsize=12)
@@ -188,12 +193,18 @@ if uploaded_file is not None:
         with col1:
             st.dataframe(emoji_df)
 
+        matplotlib.rcParams['font.family'] = 'Segoe UI Emoji'
+        matplotlib.rcParams['axes.unicode_minus'] = False
+
         with col2:
             if not emoji_df.empty:
                 fig, ax = plt.subplots()
-                ax.pie(emoji_df['Count'].head(), labels=emoji_df['Emoji'].head(), autopct="%0.2f")
+                ax.pie(
+                    emoji_df['Count'].head(),
+                    labels=emoji_df['Emoji'].head(),
+                    autopct="%0.2f"
+                )
                 plt.title('Top 5 Used Emojis', fontsize=14, weight='bold')
-
                 st.pyplot(fig)
             else:
                 st.write("No emojis found in this chat.")
